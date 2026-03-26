@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/install.bats – Comprehensive tests for install.sh
+# tests/install.bats - Comprehensive tests for install.sh
 
 SCRIPT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)/install.sh"
 
@@ -63,8 +63,12 @@ exit 0"
 }
 
 # Restrict PATH to only $MOCK_BIN, symlinking essential system tools so the
-# script can still run – but tools not symlinked (e.g. sha256sum, curl) are
+# script can still run - but tools not symlinked (e.g. sha256sum, curl) are
 # invisible to 'command -v'.
+#
+# Tools included: tar and gzip (for tarball ops), file utilities (mktemp,
+# mkdir, chmod, rm, cp), basename (for shell detection), and the runtime
+# needed to launch the script itself (setsid, bash).
 use_restricted_path() {
   for cmd in tar gzip mktemp mkdir chmod rm cp basename setsid bash; do
     local real_path
@@ -517,8 +521,10 @@ exit 1"
 @test "installs to /usr/local/bin for root user when PREFIX is unset" {
   unset PREFIX
   create_mock "id" 'echo 0'
-  # /usr/local/bin likely exists; we just verify the path appears in output
-  run setsid bash "$SCRIPT" || true
+  # We may not have write permission to /usr/local/bin in this environment, so
+  # we don't assert a specific exit code - we only verify the path appears in
+  # the output, confirming the root-user PREFIX logic is exercised.
+  run setsid bash "$SCRIPT"
   [[ "$output" == *"/usr/local"* ]]
 }
 
